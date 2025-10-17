@@ -127,6 +127,11 @@
                     <p id="welcome-message" class="text-sm text-gray-400">Bem-vindo(a)!</p>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <!-- NOVO: PWA Install Button no Cabeçalho -->
+                    <button id="install-app-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md transition duration-150">
+                        📲 Instalar
+                    </button>
+                    <!-- FIM NOVO -->
                     <button id="logout-btn" class="text-gray-400 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
@@ -169,12 +174,7 @@
                     <button id="instructor-toggle-btn" class="w-full bg-gray-900 text-yellow-500 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150">
                         Entrar em Modo Instrutor (OFF)
                     </button>
-                    <!-- NOVO: PWA Install Prompt -->
-                    <div id="pwa-install-prompt" class="hidden">
-                         <button id="install-app-btn" class="w-full btn-primary bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md mt-4">
-                            📲 Instalar App (PWA)
-                        </button>
-                    </div>
+                    <!-- REMOVIDO: PWA Install Prompt (Agora está no Header) -->
 
                     <!-- Missions Summary (Existing) -->
                     <section>
@@ -438,6 +438,9 @@
         const profileXpDisplay = document.getElementById('profile-xp');
         const rankDisplay = document.getElementById('rank-display');
         const xpDisplay = document.getElementById('xp-display');
+        
+        // PWA Install Elements
+        const installAppBtn = document.getElementById('install-app-btn');
 
 
         // =================================================================
@@ -907,7 +910,6 @@
         showAuthScreen();
 
         // NOVO: Lógica do Service Worker e PWA
-        const pwaInstallPromptDiv = document.getElementById('pwa-install-prompt');
         const installAppBtn = document.getElementById('install-app-btn');
         
         if ('serviceWorker' in navigator) {
@@ -918,6 +920,8 @@
                         console.log('Service Worker registrado com sucesso:', registration.scope);
                     })
                     .catch(error => {
+                        // Isso é comum em ambientes não-HTTPS ou não-root path.
+                        // No Netlify, ele deve funcionar se o SW estiver no root.
                         console.error('Falha no registro do Service Worker:', error);
                     });
             });
@@ -929,14 +933,14 @@
             // Guarda o evento para ser disparado mais tarde
             deferredInstallPrompt = e;
             // Mostra o botão personalizado de instalação
-            pwaInstallPromptDiv.classList.remove('hidden');
+            installAppBtn.classList.remove('hidden');
             console.log('Evento beforeinstallprompt capturado. Botão de instalação visível.');
         });
 
         installAppBtn.addEventListener('click', () => {
             if (deferredInstallPrompt) {
                 // Esconde o botão e dispara o prompt
-                pwaInstallPromptDiv.classList.add('hidden');
+                installAppBtn.classList.add('hidden');
                 deferredInstallPrompt.prompt();
                 
                 // Trata a escolha do usuário
