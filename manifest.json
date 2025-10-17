@@ -1,0 +1,21 @@
+{
+  "name": "Bombeiro Bilíngue",
+  "short_name": "BBilingue",
+  "description": "Fluentoria de Inglês: Curso gamificado para alto desempenho.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#212529",
+  "theme_color": "#DC3545",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

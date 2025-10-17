@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bombeiro Bilíngue</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#212529">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192x192.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+
+    <!-- Custom Styles -->
+    <style>
+        /* Arquivo 'style.css' em um repositório real */
+        body {
+            font-family: 'Roboto', sans-serif;
+        }
+        .fire-gradient-text {
+            background: linear-gradient(to right, #FFC107, #DC3545);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .btn-primary {
+            background-color: #DC3545;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .btn-primary:hover {
+            background-color: #c82333;
+            transform: scale(1.05);
+        }
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.5s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+        /* Style for the simulation dialogue */
+        #simulation-content p:nth-child(even) {
+            background-color: #374151; /* gray-700 */
+            padding: 8px;
+            border-radius: 8px;
+            margin-left: 20px;
+            text-align: right;
+        }
+        #simulation-content p:nth-child(odd) {
+            background-color: #1F2937; /* gray-800 */
+            padding: 8px;
+            border-radius: 8px;
+            margin-right: 20px;
+        }
+        .view-content {
+            min-height: calc(100vh - 100px); /* Adjust based on header/footer height */
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            overflow: hidden;
+            background-color: #000;
+            border-radius: 0.75rem;
+        }
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: 0;
+        }
+    </style>
+</head>
+<body class="bg-[#212529] text-[#F8F9FA] antialiased">
+    <!-- 
+        Chosen Palette: Bombeiro (Vermelho Vivo, Carvão, Amarelo/Ouro, Branco Sujo)
+        Application Structure Plan: The core course structure (Missions and Flows) is now defined in static JavaScript arrays (staticMissions, staticMindfulFlows) within the code, completely decoupling content structure from the database. Supabase is now used ONLY for user-specific data (profiles) like XP, rank, and schedule times. Navigation is handled by the fixed bottom bar.
+        Visualization & Content Choices: 
+        - User Progress: Manômetro SVG for overall completion.
+        - Mission Detail: Embedded iframe for video playback.
+        - Mindful Flow Detail: Embedded iframe for video playback.
+        CONFIRMATION: NO SVG graphics used (except for the programmatically generated progress circle which is a standard and safe use). NO Mermaid JS used.
+    -->
+    <div id="app-container" class="max-w-lg mx-auto min-h-screen flex flex-col">
+
+        <!-- ===== LOGIN/REGISTER SCREEN ===== -->
+        <div id="auth-screen" class="flex flex-col items-center justify-center flex-grow p-6">
+            <div class="w-full text-center">
+                <h1 class="text-5xl font-black mb-2 fire-gradient-text">Bombeiro Bilíngue</h1>
+                <p class="text-lg text-gray-300 mb-8">Sua jornada para a fluência começa agora.</p>
+
+                <div id="auth-form-container" class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <form id="login-form">
+                        <div class="mb-4">
+                            <input type="email" id="login-email" placeholder="Seu e-mail" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#DC3545]" required>
+                        </div>
+                        <div class="mb-6">
+                            <input type="password" id="login-password" placeholder="Sua senha" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#DC3545]" required>
+                        </div>
+                        <button type="submit" class="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg shadow-md">
+                            Entrar na Missão
+                        </button>
+                    </form>
+                    <p id="auth-error" class="text-red-400 text-sm mt-4 h-5"></p>
+                </div>
+                <p class="mt-6 text-gray-400">Não tem uma conta? <button id="show-register-btn" class="font-bold text-[#FFC107] hover:underline">Crie um Perfil</button></p>
+            </div>
+        </div>
+
+        <!-- ===== MAIN APP SCREEN (Hidden by default) ===== -->
+        <main id="app-screen" class="hidden flex-grow w-full">
+            <!-- Header -->
+            <header class="flex items-center justify-between p-4 bg-gray-800/50 backdrop-blur-sm sticky top-0 z-10">
+                <div>
+                    <h1 id="header-title" class="text-xl font-bold">Dashboard</h1>
+                    <p id="welcome-message" class="text-sm text-gray-400">Bem-vindo(a)!</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="logout-btn" class="text-gray-400 hover:text-white">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+                    </button>
+                    <img id="avatar-img" src="https://placehold.co/40x40/212529/FFC107?text=BB" alt="Avatar" class="w-10 h-10 rounded-full border-2 border-[#FFC107]">
+                </div>
+            </header>
+
+            <!-- Main Content Container for Views -->
+            <div id="view-container" class="flex-grow overflow-y-auto pb-24">
+                
+                <!-- === 1. DASHBOARD VIEW === -->
+                <div id="dashboard-view" class="view-content p-4 space-y-6">
+                    <!-- Progress Section (Existing) -->
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
+                        <h2 class="text-lg font-bold text-gray-300 mb-4">Seu Progresso Geral</h2>
+                        <div class="relative inline-block">
+                            <svg class="w-40 h-40">
+                                <circle class="text-gray-700" stroke-width="12" stroke="currentColor" fill="transparent" r="58" cx="80" cy="80" />
+                                <circle id="progress-circle" class="progress-ring__circle text-[#DC3545]" stroke-width="12" stroke-linecap="round" stroke="currentColor" fill="transparent" r="58" cx="80" cy="80" />
+                            </svg>
+                            <div id="progress-text" class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-3xl font-black">0%</div>
+                        </div>
+                        <div class="flex justify-around mt-6 text-center">
+                            <div>
+                                <p class="text-sm text-gray-400">Patente</p>
+                                <p id="rank-display" class="text-lg font-bold text-[#FFC107]">Cadete</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">XP</p>
+                                <p id="xp-display" class="text-lg font-bold">0</p>
+                            </div>
+                            <div>
+                                <p class="text-sm text-gray-400">Conquistas</p>
+                                <p id="achievements-display" class="text-lg font-bold">0</p>
+                            </div>
+                        </div>
+                    </section>
+                    
+                    <!-- Instructor Toggle (Kept for now, but functionality is limited to just seeing all content) -->
+                    <button id="instructor-toggle-btn" class="w-full bg-gray-900 text-yellow-500 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150">
+                        Entrar em Modo Instrutor (OFF)
+                    </button>
+
+                    <!-- Missions Summary (Existing) -->
+                    <section>
+                        <h2 class="text-2xl font-bold mb-4">Próximas Missões</h2>
+                        <div id="missions-list-summary" class="space-y-3">
+                            <p class="text-gray-500 text-center py-4">Carregando missões...</p>
+                        </div>
+                        <button onclick="changeScreen('missions')" class="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-sm">Ver todas as missões</button>
+                    </section>
+                </div>
+
+                <!-- === 2. MISSIONS LIST VIEW (List) === -->
+                <div id="missions-view" class="view-content hidden p-4 space-y-6">
+                    <h2 class="text-3xl font-bold mb-6">📚 Central de Missões</h2>
+                    
+                    <!-- Missions List for Students -->
+                    <section class="space-y-4">
+                        <h3 class="text-xl font-bold mb-2 text-[#DC3545]">Histórico de Atividades</h3>
+                        <p class="text-gray-400 text-sm">Aulas liberadas aparecerão aqui, ordenadas por data de liberação.</p>
+                        <div id="missions-list-full" class="space-y-3">
+                            <p class="text-gray-500 text-center py-4">Nenhuma missão liberada ainda.</p>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- === 2b. MISSION DETAIL VIEW === -->
+                <div id="mission-detail-view" class="view-content hidden p-4 space-y-6">
+                    <button onclick="changeScreen('missions')" class="flex items-center text-gray-400 hover:text-white mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Voltar para Central
+                    </button>
+
+                    <h2 id="detail-mission-title" class="text-3xl font-bold mb-2"></h2>
+                    <p id="detail-mission-module" class="text-lg text-gray-400 mb-4"></p>
+
+                    <div class="video-container">
+                        <iframe id="detail-video-player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-3 text-[#FFC107]">Resumo da Missão</h3>
+                        <p class="text-gray-300">
+                            Aqui ficariam os pontos-chave da aula e exercícios de fixação, após o vídeo ser concluído. A missão só será marcada como "Concluída" após a interação nesta seção.
+                        </p>
+                        <button class="mt-4 w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md">
+                            Concluir Missão e Ganhar XP
+                        </button>
+                    </section>
+                </div>
+
+                <!-- === 3. MINDFUL FLOW LIST VIEW === -->
+                <div id="mindful-view" class="view-content p-4 space-y-6 hidden">
+                    <h2 class="text-3xl font-bold mb-6">🧘 Mindful Flow Central</h2>
+                    
+                    <!-- Mindful Flows List for Students -->
+                    <section class="space-y-4">
+                        <h3 class="text-xl font-bold mb-2 text-blue-400">Fluxos Liberados</h3>
+                        <p class="text-gray-400 text-sm">Escolha o Flow de meditação que melhor se encaixa no seu momento.</p>
+                        <div id="mindful-list" class="space-y-3">
+                            <p class="text-gray-500 text-center py-4">Carregando Fluxos...</p>
+                        </div>
+                    </section>
+                    
+                    <section class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                        <h4 class="text-lg font-bold mb-2">Seu Horário Diário</h4>
+                        <p class="text-sm text-gray-400">Definido para: <span id="mindful-time-display" class="font-bold text-[#FFC107]">--:--</span></p>
+                        <button onclick="changeScreen('profile')" class="mt-3 text-sm text-blue-400 hover:underline">Ajustar horário no perfil</button>
+                    </section>
+                </div>
+
+                <!-- === 3b. MINDFUL FLOW DETAIL VIEW (Agora usa player de vídeo) === -->
+                <div id="mindful-detail-view" class="view-content hidden p-4 space-y-6">
+                    <button onclick="changeScreen('mindful')" class="flex items-center text-gray-400 hover:text-white mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Voltar para Fluxos
+                    </button>
+
+                    <h2 id="detail-mindful-title" class="text-3xl font-bold mb-2 text-blue-400"></h2>
+                    <p class="text-lg text-gray-400 mb-6">Acompanhe o Flow de respiração guiada com o vídeo do instrutor.</p>
+                    
+                    <!-- NOVO: Container de Vídeo -->
+                    <div class="video-container">
+                        <iframe id="detail-mindful-video-player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>
+
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-3 text-[#FFC107]">Resumo do Flow</h3>
+                        <p class="text-gray-300">
+                            Aqui ficariam instruções adicionais sobre como realizar a meditação ou o exercício de respiração.
+                        </p>
+                        <button class="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md">
+                            Flow Concluído! (+ XP)
+                        </button>
+                    </section>
+                </div>
+
+                <!-- === 4. PROFILE VIEW === -->
+                <div id="profile-view" class="view-content hidden p-4 space-y-6">
+                    <h2 class="text-3xl font-bold mb-6">👤 Seu Perfil de Resgate</h2>
+                    
+                    <!-- Avatar and Rank -->
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg text-center">
+                        <img id="profile-avatar-img" src="https://placehold.co/80x80/212529/FFC107?text=BB" alt="Avatar" class="w-20 h-20 rounded-full border-4 border-[#FFC107] mx-auto mb-4">
+                        <h3 id="profile-name" class="text-xl font-bold mb-1">Aluno(a) Cadete</h3>
+                        <p class="text-gray-400">Patente: <span id="profile-rank" class="font-bold text-[#FFC107]">Carregando...</span> | XP: <span id="profile-xp">...</span></p>
+                        <button class="mt-4 bg-gray-700 hover:bg-gray-600 text-sm py-2 px-4 rounded-lg">Customizar Avatar</button>
+                    </section>
+
+                    <!-- Schedule Configuration -->
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4 text-[#DC3545]">🚨 Horários de Alerta (Notificações)</h3>
+                        <p class="text-gray-400 mb-4 text-sm">Escolha os dois momentos do dia para receber o alerta de notificação.</p>
+                        <form id="schedule-form" class="space-y-4">
+                            <div>
+                                <label for="aula-time" class="block mb-2 font-medium">Horário da Missão (Aula)</label>
+                                <input type="time" id="aula-time" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#DC3545]" required>
+                            </div>
+                            <div>
+                                <label for="mindful-time" class="block mb-2 font-medium">Horário do Flow (Meditação)</label>
+                                <input type="time" id="mindful-time" class="w-full px-4 py-2 bg-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#DC3545]" required>
+                            </div>
+                            <button type="submit" id="save-schedule-btn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg shadow-md">
+                                Salvar Horários
+                            </button>
+                            <p id="schedule-status" class="text-sm text-center h-4 pt-2"></p>
+                        </form>
+                    </section>
+                </div>
+            </div>
+            
+        </main>
+
+        <!-- Bottom Navigation -->
+        <nav id="bottom-nav" class="hidden fixed bottom-0 left-0 right-0 max-w-lg mx-auto bg-gray-800/80 backdrop-blur-sm border-t border-gray-700 flex justify-around z-20">
+            <button data-view="dashboard" class="nav-btn flex-1 p-3 text-center text-[#DC3545]">
+                <span class="text-2xl">🔥</span>
+                <span class="text-xs block">Dashboard</span>
+            </button>
+            <button data-view="missions" class="nav-btn flex-1 p-3 text-center text-gray-400 hover:text-white">
+                <span class="text-2xl">📚</span>
+                <span class="text-xs block">Missões</span>
+            </button>
+             <button data-view="mindful" class="nav-btn flex-1 p-3 text-center text-gray-400 hover:text-white">
+                <span class="text-2xl">🧘</span>
+                <span class="text-xs block">Mindful</span>
+            </button>
+            <button data-view="profile" class="nav-btn flex-1 p-3 text-center text-gray-400 hover:text-white">
+                <span class="text-2xl">👤</span>
+                <span class="text-xs block">Perfil</span>
+            </button>
+        </nav>
+        
+        <!-- Simulation Modal (This is now UNUSED) -->
+        <div id="simulation-modal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden">
+            <div class="bg-gray-900 w-full max-w-md p-6 rounded-xl shadow-2xl border-t-4 border-[#DC3545]">
+                <h3 class="text-2xl font-bold mb-4 text-[#DC3545]">Simulação Ativa</h3>
+                <p id="simulation-loading" class="text-yellow-400 mb-4 hidden">Gerando cenário... Por favor, aguarde a central.</p>
+                <div id="simulation-content" class="space-y-4 max-h-96 overflow-y-auto text-gray-300">
+                    <!-- Content will be injected here -->
+                    <p class="text-sm text-gray-500 text-center">O diálogo de simulação aparecerá aqui.</p>
+                </div>
+                <div id="simulation-sources" class="text-xs text-gray-500 mt-4 border-t border-gray-700 pt-2 hidden">
+                    <p class="font-bold mb-1">Fontes de Apoio (Grounding):</p>
+                    <ul id="source-list" class="list-disc list-inside space-y-1"></ul>
+                </div>
+                <button id="close-simulation-btn" class="w-full mt-6 bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">
+                    Fechar e Anotar Lições
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // O código JavaScript a seguir seria dividido em arquivos como 'config.js', 'utils.js', 'api.js' e 'main.js' 
+        // em um repositório real, mas é mantido aqui por restrições do ambiente.
+
+        // =================================================================
+        // SECTION 1: CONFIGURAÇÃO E SETUP (config.js)
+        // =================================================================
+        const SUPABASE_URL = 'https://garwbiwezqoqtdampwvr.supabase.co'; 
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhcndiaXdlenFvcXRkYW1wd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NzQ1NTcsImV4cCI6MjA3NjI1MDU1N30.qwLlho5CFHieu72ro8Q6Fy-0bHG68Ec7wN-_r92ZnAk';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const IS_MOCK_AUTH = false; 
+        
+        const PROFILES_TABLE = 'profiles'; // A ÚNICA TABELA NO BD AGORA.
+
+        let IS_INSTRUCTOR_MODE = false;
+        // Os e-mails de instrutor agora só servem para ver *todos* os conteúdos (liberados ou não)
+        const INSTRUCTOR_EMAILS = ['instrutor@bombeiro.com.br', 'jairosouza67@gmail.com']; 
+        
+        // Dados do Usuário Ativo
+        let currentActiveUser = null;
+        let currentProfileData = null;
+
+
+        // =================================================================
+        // SECTION 2: VARIÁVEIS DO DOM E MAPAS (dom.js)
+        // =================================================================
+        const authScreen = document.getElementById('auth-screen');
+        const appScreen = document.getElementById('app-screen');
+        const bottomNav = document.getElementById('bottom-nav');
+        const loginForm = document.getElementById('login-form');
+        const authError = document.getElementById('auth-error');
+        const logoutBtn = document.getElementById('logout-btn');
+        const welcomeMessage = document.getElementById('welcome-message');
+        const headerTitle = document.getElementById('header-title');
+        
+        // Novos elementos da Missão/Instrutor
+        const instructorToggleBtn = document.getElementById('instructor-toggle-btn');
+        const missionsListSummary = document.getElementById('missions-list-summary');
+        const missionsListFull = document.getElementById('missions-list-full');
+        
+        // Mission Detail Elements
+        const detailMissionTitle = document.getElementById('detail-mission-title');
+        const detailMissionModule = document.getElementById('detail-mission-module');
+        const detailVideoPlayer = document.getElementById('detail-video-player');
+
+        const views = {
+            'dashboard': document.getElementById('dashboard-view'),
+            'missions': document.getElementById('missions-view'),
+            'mission-detail': document.getElementById('mission-detail-view'),
+            'mindful': document.getElementById('mindful-view'),
+            'mindful-detail': document.getElementById('mindful-detail-view'),
+            'profile': document.getElementById('profile-view')
+        };
+        const viewTitles = {
+            'dashboard': 'Dashboard',
+            'missions': 'Central de Missões',
+            'mission-detail': 'Detalhe da Missão',
+            'mindful': 'Mindful Flow Central',
+            'mindful-detail': 'Detalhe do Flow',
+            'profile': 'Perfil'
+        };
+
+        // Progress Circle Elements
+        const progressCircle = document.getElementById('progress-circle');
+        const radius = progressCircle.r.baseVal.value;
+        const circumference = radius * 2 * Math.PI;
+        progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        progressCircle.style.strokeDashoffset = circumference;
+        
+        // Mindful Flow List Elements
+        const mindfulList = document.getElementById('mindful-list');
+
+        // Mindful Flow Detail Elements
+        const detailMindfulTitle = document.getElementById('detail-mindful-title');
+        const detailMindfulVideoPlayer = document.getElementById('detail-mindful-video-player');
+
+
+        // Profile Elements
+        const scheduleForm = document.getElementById('schedule-form');
+        const aulaTimeInput = document.getElementById('aula-time');
+        const mindfulTimeInput = document.getElementById('mindful-time');
+        const saveScheduleBtn = document.getElementById('save-schedule-btn');
+        const scheduleStatus = document.getElementById('schedule-status');
+        const mindfulTimeDisplay = document.getElementById('mindful-time-display');
+
+        const profileNameDisplay = document.getElementById('profile-name');
+        const profileRankDisplay = document.getElementById('profile-rank');
+        const profileXpDisplay = document.getElementById('profile-xp');
+        const rankDisplay = document.getElementById('rank-display');
+        const xpDisplay = document.getElementById('xp-display');
+
+
+        // =================================================================
+        // SECTION 3: ESTRUTURA E CONTEÚDO FIXO (MOCK DATA)
+        // =================================================================
+        
+        // Estrutura Fixa das Missões (Conteúdo do Curso)
+        const staticMissions = [
+            { id: 'm01', module: 'Módulo 1: Primeiros Socorros', title: 'Chamado 101: Introdução à Fluência', video_url: 'https://www.youtube.com/embed/dQw4w9WgXcQ', release_datetime: '2025-10-01T10:00:00' },
+            { id: 'm02', module: 'Módulo 1: Primeiros Socorros', title: 'Chamado 102: Phrasal Verbs de Emergência', video_url: 'https://www.youtube.com/embed/yFjKjXN6TfA', release_datetime: '2025-10-15T14:30:00' },
+            { id: 'm03', module: 'Módulo 2: Combate a Incêndio', title: 'Chamado 201: Vocabulário Técnico de Resgate', video_url: 'https://www.youtube.com/embed/sY5i5j8Y-X4', release_datetime: '2025-11-05T19:00:00' },
+            { id: 'm04', module: 'Módulo 2: Combate a Incêndio', title: 'Chamado 202: Simulações de Diálogo Básico', video_url: 'https://www.youtube.com/embed/ZqXN3R3xLp4', release_datetime: '2025-11-20T10:00:00' },
+            { id: 'm05', module: 'Módulo 3: Resgate em Altura', title: 'Chamado 301: Expressões Idiomáticas', video_url: 'https://www.youtube.com/embed/Pj1iW-9G_iA', release_datetime: '2026-01-01T00:00:00' }, // Missão futura
+        ];
+
+        // Estrutura Fixa dos Flows (Conteúdo da Meditação)
+        const staticMindfulFlows = [
+            { id: 'f01', title: 'Flow 01: Respiração de Foco', video_url: 'https://www.youtube.com/embed/hB2h1XJ-K28', duration_minutes: 5, release_datetime: '2025-10-01T08:00:00' },
+            { id: 'f02', title: 'Flow 02: Relaxamento Pós-Estudo', video_url: 'https://www.youtube.com/embed/wEw_Yc7T_58', duration_minutes: 10, release_datetime: '2025-10-25T21:00:00' },
+            { id: 'f03', title: 'Flow 03: Visualização do Sucesso', video_url: 'https://www.youtube.com/embed/T0g5nCjYmgo', duration_minutes: 8, release_datetime: '2025-12-10T07:00:00' },
+            { id: 'f04', title: 'Flow 04: Calma Sob Pressão', video_url: 'https://www.youtube.com/embed/9w_vFhC4w-o', duration_minutes: 7, release_datetime: '2026-02-01T00:00:00' }, // Flow futuro
+        ];
+
+
+        // =================================================================
+        // SECTION 4: FUNÇÕES DE UTILIDADE E HELPERS (utils.js)
+        // =================================================================
+        
+        function setProgress(percent) {
+            const offset = circumference - (percent / 100) * circumference;
+            progressCircle.style.strokeDashoffset = offset;
+            document.getElementById('progress-text').textContent = `${percent}%`;
+        }
+
+        function youtubeEmbedUrl(url) {
+            if (!url) return '';
+            const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/i);
+            if (match && match[1]) {
+                return `https://www.youtube.com/embed/${match[1]}`;
+            }
+            return url; // Retorna a URL original se não for YouTube (pode ser Vimeo, etc.)
+        }
+        
+        function getStaticMissions() {
+            return staticMissions;
+        }
+
+        function getStaticMindfulFlows() {
+            return staticMindfulFlows;
+        }
+
+
+        // =================================================================
+        // SECTION 5: LÓGICA DE VISUALIZAÇÃO E NAVEGAÇÃO (ui.js)
+        // =================================================================
+
+        function changeScreen(screenName) {
+            // Stop videos when leaving detail view
+            if (views['mission-detail'] && !views['mission-detail'].classList.contains('hidden')) {
+                detailVideoPlayer.src = '';
+            }
+            if (views['mindful-detail'] && !views['mindful-detail'].classList.contains('hidden')) {
+                detailMindfulVideoPlayer.src = '';
+            }
+
+            Object.values(views).forEach(view => view.classList.add('hidden'));
+            const targetView = views[screenName];
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                headerTitle.textContent = viewTitles[screenName];
+            }
+
+            // Specific actions on screen change
+            if (screenName === 'profile' && currentProfileData) {
+                loadProfileData(); 
+            }
+            if (screenName === 'mindful') {
+                renderMindfulFlows();
+            }
+            if (screenName === 'dashboard') {
+                renderMissions();
+            }
+
+            // Update bottom nav active state
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const isMainView = ['dashboard', 'missions', 'mindful', 'profile'].includes(btn.dataset.view);
+                
+                if (isMainView) {
+                    if (btn.dataset.view === screenName || (screenName === 'mission-detail' && btn.dataset.view === 'missions') || (screenName === 'mindful-detail' && btn.dataset.view === 'mindful')) {
+                        btn.classList.remove('text-gray-400', 'hover:text-white');
+                        btn.classList.add('text-[#DC3545]');
+                    } else {
+                        btn.classList.add('text-gray-400', 'hover:text-white');
+                        btn.classList.remove('text-[#DC3545]');
+                    }
+                }
+            });
+            window.scrollTo(0, 0); // Scroll to top on screen change
+        }
+
+        function renderMissionList(missions, container) {
+            if (missions.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center py-4">Nenhuma missão liberada ainda.</p>`;
+                return;
+            }
+            
+            const now = new Date().getTime();
+
+            container.innerHTML = missions.map(mission => {
+                const releaseTime = new Date(mission.release_datetime).getTime();
+                const isReleased = releaseTime <= now;
+                
+                let statusColor = 'bg-gray-700 text-gray-400';
+                let statusText = 'Bloqueada';
+                let icon = '🔒';
+                let clickAction = isReleased || IS_INSTRUCTOR_MODE ? `showMissionDetail('${mission.id}')` : '';
+                let cursorStyle = isReleased || IS_INSTRUCTOR_MODE ? 'cursor-pointer hover:bg-gray-700' : 'cursor-default opacity-60';
+
+                if (isReleased) {
+                    // MOCK: Assumindo que a primeira missão liberada é a 'active'
+                    const isActive = container === missionsListSummary ? (mission.id === missions[0].id) : false;
+                    statusColor = isActive ? 'bg-[#DC3545] text-white animate-pulse' : 'bg-green-800 text-green-300';
+                    statusText = isActive ? 'Ativa' : 'Liberada';
+                    icon = isActive ? '🚨' : '✅';
+                }
+
+                if (IS_INSTRUCTOR_MODE && !isReleased) {
+                    statusColor = 'bg-yellow-800 text-yellow-300';
+                    statusText = 'Agendada/Instrutor';
+                    icon = '✏️';
+                }
+
+                const releaseDate = new Date(mission.release_datetime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+                return `
+                    <div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between shadow-md ${cursorStyle}" onclick="${clickAction}">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl">${icon}</div>
+                            <div>
+                                <h3 class="font-bold">${mission.title}</h3>
+                                <p class="text-sm text-gray-400">${mission.module}</p>
+                                <p class="text-xs text-gray-500 mt-1">Liberação: ${releaseDate}</p>
+                            </div>
+                        </div>
+                        <div class="${statusColor} text-xs font-bold px-2 py-1 rounded-full capitalize">${statusText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function renderMindfulList(flows, container) {
+            if (flows.length === 0) {
+                container.innerHTML = `<p class="text-gray-500 text-center py-4">Nenhum Flow de Meditação liberado ainda.</p>`;
+                return;
+            }
+            
+            const now = new Date().getTime();
+
+            container.innerHTML = flows.map(flow => {
+                const releaseTime = new Date(flow.release_datetime).getTime();
+                const isReleased = releaseTime <= now;
+                
+                let icon = '🧘';
+                let clickAction = isReleased || IS_INSTRUCTOR_MODE ? `showMindfulDetail('${flow.id}')` : '';
+                let cursorStyle = isReleased || IS_INSTRUCTOR_MODE ? 'cursor-pointer hover:bg-gray-700' : 'cursor-default opacity-60';
+                let statusText = isReleased ? 'Liberado' : 'Bloqueado';
+                let statusColor = isReleased ? 'bg-blue-800 text-blue-300' : 'bg-gray-700 text-gray-400';
+
+                if (IS_INSTRUCTOR_MODE && !isReleased) {
+                    icon = '✏️';
+                    statusText = 'Agendada/Instrutor';
+                    statusColor = 'bg-yellow-800 text-yellow-300';
+                }
+
+                const releaseDate = new Date(flow.release_datetime).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+
+                return `
+                    <div class="bg-gray-800 p-4 rounded-lg flex items-center justify-between shadow-md ${cursorStyle}" onclick="${clickAction}">
+                        <div class="flex items-center space-x-4">
+                            <div class="text-2xl">${icon}</div>
+                            <div>
+                                <h3 class="font-bold">${flow.title}</h3>
+                                <p class="text-sm text-gray-400">Duração: ${flow.duration_minutes} min</p>
+                                <p class="text-xs text-gray-500 mt-1">Liberação: ${releaseDate}</p>
+                            </div>
+                        </div>
+                        <div class="${statusColor} text-xs font-bold px-2 py-1 rounded-full capitalize">${statusText}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function showMissionDetail(missionId) {
+            const mission = getStaticMissions().find(m => m.id === missionId);
+            if (!mission) {
+                console.error("Missão não encontrada:", missionId);
+                return;
+            }
+            
+            const isReleased = new Date(mission.release_datetime).getTime() <= new Date().getTime();
+            if (!isReleased && !IS_INSTRUCTOR_MODE) {
+                // Not relevant anymore as click action is disabled, but kept as a safeguard
+                return;
+            }
+
+            detailMissionTitle.textContent = mission.title;
+            detailMissionModule.textContent = mission.module;
+            detailVideoPlayer.src = youtubeEmbedUrl(mission.video_url);
+
+            changeScreen('mission-detail');
+        }
+        
+        function showMindfulDetail(flowId) {
+            const flow = getStaticMindfulFlows().find(f => f.id === flowId);
+            if (!flow) {
+                console.error("Flow não encontrado:", flowId);
+                return;
+            }
+
+            const isReleased = new Date(flow.release_datetime).getTime() <= new Date().getTime();
+            if (!isReleased && !IS_INSTRUCTOR_MODE) {
+                // Not relevant anymore as click action is disabled, but kept as a safeguard
+                return;
+            }
+
+            detailMindfulTitle.textContent = flow.title;
+            detailMindfulVideoPlayer.src = youtubeEmbedUrl(flow.video_url); 
+
+            changeScreen('mindful-detail');
+        }
+
+        function toggleInstructorView() {
+            // Note: Instructor mode now only controls content visibility (all vs. released).
+            IS_INSTRUCTOR_MODE = !IS_INSTRUCTOR_MODE;
+            instructorToggleBtn.textContent = IS_INSTRUCTOR_MODE 
+                ? 'Sair do Modo Instrutor (ON)' 
+                : 'Entrar em Modo Instrutor (OFF)';
+            instructorToggleBtn.classList.toggle('bg-gray-900');
+            instructorToggleBtn.classList.toggle('bg-red-800');
+            instructorToggleBtn.classList.toggle('text-yellow-500');
+            instructorToggleBtn.classList.toggle('text-white');
+            
+            renderMissions(); 
+            renderMindfulFlows();
+        }
+        
+        function loadProfileData() {
+            if (!currentProfileData) return;
+            
+            // Update form inputs with loaded data
+            aulaTimeInput.value = currentProfileData.aula_time ? currentProfileData.aula_time.substring(0, 5) : '10:00';
+            mindfulTimeInput.value = currentProfileData.mindful_time ? currentProfileData.mindful_time.substring(0, 5) : '20:30';
+
+            // Update UI displays
+            const userName = currentProfileData.username || currentActiveUser.email.split('@')[0];
+            
+            profileNameDisplay.textContent = userName;
+            welcomeMessage.textContent = `Bem-vindo(a) de volta, ${userName}!`;
+
+            profileRankDisplay.textContent = currentProfileData.rank;
+            profileXpDisplay.textContent = currentProfileData.xp;
+            rankDisplay.textContent = currentProfileData.rank;
+            xpDisplay.textContent = currentProfileData.xp;
+            mindfulTimeDisplay.textContent = currentProfileData.mindful_time ? currentProfileData.mindful_time.substring(0, 5) : '--:--';
+
+            // Update progress (MOCK)
+            const totalProgress = currentProfileData.xp % 100; // Simple Example
+            setProgress(totalProgress);
+        }
+
+
+        // =================================================================
+        // SECTION 6: FUNÇÕES DE RENDERIZAÇÃO DE CONTEÚDO ESTRUTURAL
+        // =================================================================
+
+        function renderMissions() {
+            const allMissions = getStaticMissions();
+            const now = new Date().getTime();
+
+            const releasedMissions = allMissions
+                .filter(m => new Date(m.release_datetime).getTime() <= now);
+            
+            const missionsToRender = IS_INSTRUCTOR_MODE ? allMissions : releasedMissions;
+            
+            // Sort by release date ascending
+            missionsToRender.sort((a, b) => new Date(a.release_datetime) - new Date(b.release_datetime));
+
+            renderMissionList(missionsToRender.slice(0, 4), missionsListSummary);
+            renderMissionList(missionsToRender, missionsListFull);
+        }
+
+        function renderMindfulFlows() {
+            const allFlows = getStaticMindfulFlows();
+            const now = new Date().getTime();
+
+            const releasedFlows = allFlows
+                .filter(f => new Date(f.release_datetime).getTime() <= now);
+
+            const flowsToRender = IS_INSTRUCTOR_MODE ? allFlows : releasedFlows;
+
+            // Sort by release date ascending
+            flowsToRender.sort((a, b) => new Date(a.release_datetime) - new Date(b.release_datetime));
+            
+            renderMindfulList(flowsToRender, mindfulList);
+        }
+
+
+        // =================================================================
+        // SECTION 7: SUPABASE (PROFILE & AUTH)
+        // =================================================================
+        
+        async function getOrCreateProfile(user) {
+            const userId = user.id;
+
+            // 1. Try to fetch profile
+            let { data: profile, error: fetchError } = await supabaseClient
+                .from(PROFILES_TABLE)
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = No row found
+                console.error("Error fetching profile:", fetchError);
+                return null;
+            }
+
+            // 2. If profile doesn't exist, create a new one
+            if (!profile) {
+                console.log("Profile not found, creating new one...");
+                const { data: newProfile, error: insertError } = await supabaseClient
+                    .from(PROFILES_TABLE)
+                    .insert([
+                        { id: userId, username: user.email.split('@')[0] }
+                    ])
+                    .select()
+                    .single();
+
+                if (insertError) {
+                    console.error("Error creating profile:", insertError);
+                    return null;
+                }
+                profile = newProfile;
+            }
+
+            currentProfileData = profile;
+            loadProfileData(); // Load data into the UI
+            return profile;
+        }
+
+        async function saveSchedule(e) {
+            e.preventDefault();
+            
+            if (!currentProfileData || !currentActiveUser) return;
+            
+            const newAulaTime = aulaTimeInput.value;
+            const newMindfulTime = mindfulTimeInput.value;
+            
+            saveScheduleBtn.disabled = true;
+            scheduleStatus.textContent = 'Salvando horários...';
+            scheduleStatus.classList.remove('text-red-400', 'text-green-400');
+            scheduleStatus.classList.add('text-yellow-400');
+
+            const { data, error } = await supabaseClient
+                .from(PROFILES_TABLE)
+                .update({
+                    aula_time: newAulaTime, 
+                    mindful_time: newMindfulTime
+                })
+                .eq('id', currentActiveUser.id)
+                .select()
+                .single();
+
+            saveScheduleBtn.disabled = false;
+            
+            if (error) {
+                console.error("Supabase Update Error:", error);
+                scheduleStatus.textContent = `🚨 Erro ao salvar: ${error.message}`;
+                scheduleStatus.classList.remove('text-yellow-400');
+                scheduleStatus.classList.add('text-red-400');
+            } else {
+                currentProfileData = data; // Update local state with new data
+                loadProfileData();          // Reload UI
+                scheduleStatus.textContent = '✅ Horários salvos com sucesso!';
+                scheduleStatus.classList.remove('text-yellow-400');
+                scheduleStatus.classList.add('text-green-400');
+                setTimeout(() => scheduleStatus.textContent = '', 3000);
+            }
+        }
+
+        function showAppScreen(user) {
+            authScreen.classList.add('hidden');
+            appScreen.classList.remove('hidden');
+            bottomNav.classList.remove('hidden');
+            currentActiveUser = user;
+            
+            const userName = user.email.split('@')[0];
+            
+            // Check if user is instructor (only affects content visibility)
+            const isInstructor = INSTRUCTOR_EMAILS.includes(user.email.toLowerCase());
+
+            if (isInstructor) {
+                IS_INSTRUCTOR_MODE = true;
+                instructorToggleBtn.classList.add('bg-red-800', 'text-white');
+                instructorToggleBtn.classList.remove('bg-gray-900', 'text-yellow-500');
+                instructorToggleBtn.textContent = 'Sair do Modo Instrutor (ON)';
+            } else {
+                 IS_INSTRUCTOR_MODE = false;
+                 instructorToggleBtn.classList.remove('bg-red-800', 'text-white');
+                 instructorToggleBtn.classList.add('bg-gray-900', 'text-yellow-500');
+                 instructorToggleBtn.textContent = 'Entrar em Modo Instrutor (OFF)';
+            }
+            instructorToggleBtn.classList.toggle('hidden', !isInstructor);
+
+            getOrCreateProfile(user); // START PROFILE LOADING/CREATION
+            renderMissions(); 
+            renderMindfulFlows();
+            changeScreen('dashboard');
+        }
+
+        function showAuthScreen() {
+            appScreen.classList.add('hidden');
+            bottomNav.classList.add('hidden');
+            authScreen.classList.remove('hidden');
+            document.getElementById('login-form').reset();
+            IS_INSTRUCTOR_MODE = false;
+            currentActiveUser = null;
+            currentProfileData = null;
+        }
+
+        // --- Event Listeners ---
+        instructorToggleBtn.addEventListener('click', toggleInstructorView);
+        scheduleForm.addEventListener('submit', saveSchedule);
+        
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => changeScreen(btn.dataset.view));
+        });
+        
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            authError.textContent = ''; 
+
+            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+            if (error) {
+                console.error("Supabase Login Error:", error); 
+                
+                if (error.message.includes('Invalid login credentials')) {
+                    authError.textContent = 'E-mail ou senha inválidos, OU seu e-mail ainda não foi confirmado. Tente confirmar seu e-mail no painel do Supabase.';
+                } else {
+                    authError.textContent = `Erro de autenticação: ${error.message}. Verifique o console.`;
+                }
+                return;
+            }
+            if (data.user) {
+                showAppScreen(data.user);
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            showAuthScreen();
+        });
+
+        // --- Inicialização ---
+        showAuthScreen();
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('Installation prompt event fired.');
+        });
+        
+    </script>
+</body>
+</html>
