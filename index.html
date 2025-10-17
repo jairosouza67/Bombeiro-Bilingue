@@ -94,14 +94,18 @@
     -->
     <div id="app-container" class="max-w-lg mx-auto min-h-screen flex flex-col">
 
-        <!-- ===== LOGIN/REGISTER SCREEN ===== -->
+        <!-- ===== LOGIN/REGISTER/RESET SCREEN ===== -->
         <div id="auth-screen" class="flex flex-col items-center justify-center flex-grow p-6">
             <div class="w-full text-center">
                 <h1 class="text-5xl font-black mb-2 fire-gradient-text">Bombeiro Bilíngue</h1>
                 <p class="text-lg text-gray-300 mb-8">Sua jornada para a fluência começa agora.</p>
 
+                <!-- Auth Form Container -->
                 <div id="auth-form-container" class="bg-gray-800 p-6 rounded-xl shadow-lg">
-                    <form id="login-form">
+                    
+                    <!-- Login Form -->
+                    <form id="login-form" class="auth-form">
+                        <h3 class="text-2xl font-bold mb-4 text-[#FFC107]">Acesso do Aluno</h3>
                         <div class="mb-4">
                             <input type="email" id="login-email" placeholder="Seu e-mail" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#DC3545]" required>
                         </div>
@@ -111,10 +115,50 @@
                         <button type="submit" class="w-full btn-primary text-white font-bold py-3 px-4 rounded-lg shadow-md">
                             Entrar na Missão
                         </button>
+                        <p class="mt-4 text-xs text-center">
+                            <button type="button" id="show-reset-btn" class="font-bold text-gray-400 hover:underline">Esqueceu sua senha?</button>
+                        </p>
                     </form>
+
+                    <!-- Register Form -->
+                    <form id="register-form" class="auth-form hidden">
+                        <h3 class="text-2xl font-bold mb-4 text-green-400">Criar Novo Perfil</h3>
+                        <div class="mb-4">
+                            <input type="email" id="register-email" placeholder="Seu e-mail" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        </div>
+                        <div class="mb-4">
+                            <input type="text" id="register-username" placeholder="Seu nome de combatente" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        </div>
+                        <div class="mb-6">
+                            <input type="password" id="register-password" placeholder="Nova senha (mín. 6 caracteres)" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-400" required>
+                        </div>
+                        <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">
+                            Registrar e Confirmar E-mail
+                        </button>
+                    </form>
+                    
+                    <!-- Password Reset Form -->
+                    <form id="reset-form" class="auth-form hidden">
+                        <h3 class="text-2xl font-bold mb-4 text-blue-400">Redefinir Senha</h3>
+                        <p class="text-sm text-gray-400 mb-4">Insira seu e-mail para receber o link de redefinição.</p>
+                        <div class="mb-6">
+                            <input type="email" id="reset-email" placeholder="Seu e-mail" class="w-full px-4 py-3 bg-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400" required>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md">
+                            Enviar Link de Redefinição
+                        </button>
+                    </form>
+                    
                     <p id="auth-error" class="text-red-400 text-sm mt-4 h-5"></p>
+                    <p id="auth-message" class="text-green-400 text-sm mt-4 h-5"></p>
                 </div>
-                <p class="mt-6 text-gray-400">Não tem uma conta? <button id="show-register-btn" class="font-bold text-[#FFC107] hover:underline">Crie um Perfil</button></p>
+                
+                <p class="mt-6 text-gray-400">
+                    <button type="button" id="show-login-btn-link" class="font-bold text-[#FFC107] hover:underline hidden">Voltar para Login</button>
+                    <span id="auth-switch-text">
+                        Não tem uma conta? <button id="show-register-btn" class="font-bold text-[#FFC107] hover:underline">Crie um Perfil</button>
+                    </span>
+                </p>
             </div>
         </div>
 
@@ -127,11 +171,9 @@
                     <p id="welcome-message" class="text-sm text-gray-400">Bem-vindo(a)!</p>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <!-- NOVO: PWA Install Button no Cabeçalho -->
-                    <button id="install-app-btn" class="hidden bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold py-1 px-3 rounded-full shadow-md transition duration-150">
+                    <button id="install-app-header-btn" class="text-white bg-[#DC3545] text-xs font-bold py-1 px-3 rounded-full hover:bg-[#c82333] hidden">
                         📲 Instalar
                     </button>
-                    <!-- FIM NOVO -->
                     <button id="logout-btn" class="text-gray-400 hover:text-white">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
                     </button>
@@ -170,11 +212,15 @@
                         </div>
                     </section>
                     
-                    <!-- Instructor Toggle (Kept for now, but functionality is limited to just seeing all content) -->
+                    <!-- Instructor Toggle -->
                     <button id="instructor-toggle-btn" class="w-full bg-gray-900 text-yellow-500 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150">
                         Entrar em Modo Instrutor (OFF)
                     </button>
-                    <!-- REMOVIDO: PWA Install Prompt (Agora está no Header) -->
+                    
+                    <!-- Admin Panel Link (Only visible to Master user) -->
+                    <button id="admin-panel-link" class="w-full bg-gray-900 text-blue-400 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150 hidden" onclick="changeScreen('admin')">
+                        🛠️ Admin Panel
+                    </button>
 
                     <!-- Missions Summary (Existing) -->
                     <section>
@@ -185,6 +231,32 @@
                         <button onclick="changeScreen('missions')" class="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded-lg text-sm">Ver todas as missões</button>
                     </section>
                 </div>
+
+                <!-- === 1b. ADMIN VIEW === -->
+                <div id="admin-view" class="view-content hidden p-4 space-y-6">
+                    <h2 class="text-3xl font-bold mb-6 text-blue-400">🛠️ Painel de Administração</h2>
+                    <p class="text-gray-400 mb-4">Gerenciamento de autorização de usuários. Usuários com o status 'Master' podem ver conteúdos agendados e acessar funcionalidades de instrutor.</p>
+                    
+                    <section class="bg-gray-800 p-6 rounded-xl shadow-lg">
+                        <h3 class="text-xl font-bold mb-4">Usuários Registrados</h3>
+                        <p id="admin-status" class="text-red-400 text-sm h-4 mb-4"></p>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-700">
+                                <thead class="bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">E-mail</th>
+                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Função</th>
+                                        <th scope="col" class="px-3 py-2 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Ação</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="admin-user-list" class="divide-y divide-gray-800">
+                                    <tr class="text-center text-gray-500"><td colspan="3" class="py-4">Carregando usuários...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
 
                 <!-- === 2. MISSIONS LIST VIEW (List) === -->
                 <div id="missions-view" class="view-content hidden p-4 space-y-6">
@@ -255,7 +327,7 @@
                     <h2 id="detail-mindful-title" class="text-3xl font-bold mb-2 text-blue-400"></h2>
                     <p class="text-lg text-gray-400 mb-6">Acompanhe o Flow de respiração guiada com o vídeo do instrutor.</p>
                     
-                    <!-- NOVO: Container de Vídeo -->
+                    <!-- Container de Vídeo -->
                     <div class="video-container">
                         <iframe id="detail-mindful-video-player" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                     </div>
@@ -357,19 +429,19 @@
         const SUPABASE_URL = 'https://garwbiwezqoqtdampwvr.supabase.co'; 
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdhcndiaXdlenFvcXRkYW1wd3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2NzQ1NTcsImV4cCI6MjA3NjI1MDU1N30.qwLlho5CFHieu72ro8Q6Fy-0bHG68Ec7wN-_r92ZnAk';
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        const IS_MOCK_AUTH = false; 
         
-        const PROFILES_TABLE = 'profiles'; // A ÚNICA TABELA NO BD AGORA.
+        const PROFILES_TABLE = 'profiles'; 
+        const MASTER_EMAIL = 'jairosouza67@gmail.com'; // Usuário com permissão de Admin/Master
 
         let IS_INSTRUCTOR_MODE = false;
+        let IS_MASTER_USER = false;
         // Os e-mails de instrutor agora só servem para ver *todos* os conteúdos (liberados ou não)
-        const INSTRUCTOR_EMAILS = ['instrutor@bombeiro.com.br', 'jairosouza67@gmail.com']; 
+        const INSTRUCTOR_EMAILS = [MASTER_EMAIL, 'instrutor@bombeiro.com.br']; 
         
         // Dados do Usuário Ativo
         let currentActiveUser = null;
         let currentProfileData = null;
-        let deferredInstallPrompt = null; // NOVO: PWA Install event
-
+        let deferredInstallPrompt = null; 
 
         // =================================================================
         // SECTION 2: VARIÁVEIS DO DOM E MAPAS (dom.js)
@@ -377,11 +449,26 @@
         const authScreen = document.getElementById('auth-screen');
         const appScreen = document.getElementById('app-screen');
         const bottomNav = document.getElementById('bottom-nav');
+        
+        // Auth Forms
         const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const resetForm = document.getElementById('reset-form');
+        const showRegisterBtn = document.getElementById('show-register-btn');
+        const showLoginBtnLink = document.getElementById('show-login-btn-link');
+        const showResetBtn = document.getElementById('show-reset-btn');
+        const authSwitchText = document.getElementById('auth-switch-text');
+        
         const authError = document.getElementById('auth-error');
+        const authMessage = document.getElementById('auth-message');
         const logoutBtn = document.getElementById('logout-btn');
         const welcomeMessage = document.getElementById('welcome-message');
         const headerTitle = document.getElementById('header-title');
+        
+        // Admin Elements
+        const adminPanelLink = document.getElementById('admin-panel-link');
+        const adminUserList = document.getElementById('admin-user-list');
+        const adminStatus = document.getElementById('admin-status');
         
         // Novos elementos da Missão/Instrutor
         const instructorToggleBtn = document.getElementById('instructor-toggle-btn');
@@ -389,8 +476,6 @@
         const missionsListFull = document.getElementById('missions-list-full');
         
         // Mission Detail Elements
-        const detailMissionTitle = document.getElementById('detail-mission-title');
-        const detailMissionModule = document.getElementById('detail-mission-module');
         const detailVideoPlayer = document.getElementById('detail-video-player');
 
         const views = {
@@ -399,7 +484,8 @@
             'mission-detail': document.getElementById('mission-detail-view'),
             'mindful': document.getElementById('mindful-view'),
             'mindful-detail': document.getElementById('mindful-detail-view'),
-            'profile': document.getElementById('profile-view')
+            'profile': document.getElementById('profile-view'),
+            'admin': document.getElementById('admin-view') // NOVO
         };
         const viewTitles = {
             'dashboard': 'Dashboard',
@@ -407,7 +493,8 @@
             'mission-detail': 'Detalhe da Missão',
             'mindful': 'Mindful Flow Central',
             'mindful-detail': 'Detalhe do Flow',
-            'profile': 'Perfil'
+            'profile': 'Perfil',
+            'admin': 'Admin Panel'
         };
 
         // Progress Circle Elements
@@ -421,7 +508,6 @@
         const mindfulList = document.getElementById('mindful-list');
 
         // Mindful Flow Detail Elements
-        const detailMindfulTitle = document.getElementById('detail-mindful-title');
         const detailMindfulVideoPlayer = document.getElementById('detail-mindful-video-player');
 
 
@@ -429,8 +515,6 @@
         const scheduleForm = document.getElementById('schedule-form');
         const aulaTimeInput = document.getElementById('aula-time');
         const mindfulTimeInput = document.getElementById('mindful-time');
-        const saveScheduleBtn = document.getElementById('save-schedule-btn');
-        const scheduleStatus = document.getElementById('schedule-status');
         const mindfulTimeDisplay = document.getElementById('mindful-time-display');
 
         const profileNameDisplay = document.getElementById('profile-name');
@@ -438,9 +522,7 @@
         const profileXpDisplay = document.getElementById('profile-xp');
         const rankDisplay = document.getElementById('rank-display');
         const xpDisplay = document.getElementById('xp-display');
-        
-        // PWA Install Elements
-        const installAppBtn = document.getElementById('install-app-btn');
+        const installAppHeaderBtn = document.getElementById('install-app-header-btn');
 
 
         // =================================================================
@@ -492,6 +574,17 @@
             return staticMindfulFlows;
         }
 
+        function clearMessages() {
+            authError.textContent = '';
+            authMessage.textContent = '';
+        }
+
+        function showAuthMessage(message, isError = false) {
+            clearMessages();
+            const target = isError ? authError : authMessage;
+            target.textContent = message;
+            setTimeout(() => target.textContent = '', 5000);
+        }
 
         // =================================================================
         // SECTION 5: LÓGICA DE VISUALIZAÇÃO E NAVEGAÇÃO (ui.js)
@@ -500,10 +593,10 @@
         function changeScreen(screenName) {
             // Stop videos when leaving detail view
             if (views['mission-detail'] && !views['mission-detail'].classList.contains('hidden')) {
-                detailVideoPlayer.src = '';
+                document.getElementById('detail-video-player').src = '';
             }
             if (views['mindful-detail'] && !views['mindful-detail'].classList.contains('hidden')) {
-                detailMindfulVideoPlayer.src = '';
+                document.getElementById('detail-mindful-video-player').src = '';
             }
 
             Object.values(views).forEach(view => view.classList.add('hidden'));
@@ -523,13 +616,20 @@
             if (screenName === 'dashboard') {
                 renderMissions();
             }
+            if (screenName === 'admin' && IS_MASTER_USER) {
+                 renderAdminView();
+            }
 
             // Update bottom nav active state
             document.querySelectorAll('.nav-btn').forEach(btn => {
                 const isMainView = ['dashboard', 'missions', 'mindful', 'profile'].includes(btn.dataset.view);
                 
                 if (isMainView) {
-                    if (btn.dataset.view === screenName || (screenName === 'mission-detail' && btn.dataset.view === 'missions') || (screenName === 'mindful-detail' && btn.dataset.view === 'mindful')) {
+                    const isActive = btn.dataset.view === screenName || 
+                                     (screenName === 'mission-detail' && btn.dataset.view === 'missions') || 
+                                     (screenName === 'mindful-detail' && btn.dataset.view === 'mindful');
+
+                    if (isActive) {
                         btn.classList.remove('text-gray-400', 'hover:text-white');
                         btn.classList.add('text-[#DC3545]');
                     } else {
@@ -640,15 +740,9 @@
                 return;
             }
             
-            const isReleased = new Date(mission.release_datetime).getTime() <= new Date().getTime();
-            if (!isReleased && !IS_INSTRUCTOR_MODE) {
-                // Not relevant anymore as click action is disabled, but kept as a safeguard
-                return;
-            }
-
-            detailMissionTitle.textContent = mission.title;
-            detailMissionModule.textContent = mission.module;
-            detailVideoPlayer.src = youtubeEmbedUrl(mission.video_url);
+            document.getElementById('detail-mission-title').textContent = mission.title;
+            document.getElementById('detail-mission-module').textContent = mission.module;
+            document.getElementById('detail-video-player').src = youtubeEmbedUrl(mission.video_url);
 
             changeScreen('mission-detail');
         }
@@ -660,14 +754,8 @@
                 return;
             }
 
-            const isReleased = new Date(flow.release_datetime).getTime() <= new Date().getTime();
-            if (!isReleased && !IS_INSTRUCTOR_MODE) {
-                // Not relevant anymore as click action is disabled, but kept as a safeguard
-                return;
-            }
-
-            detailMindfulTitle.textContent = flow.title;
-            detailMindfulVideoPlayer.src = youtubeEmbedUrl(flow.video_url); 
+            document.getElementById('detail-mindful-title').textContent = flow.title;
+            document.getElementById('detail-mindful-video-player').src = youtubeEmbedUrl(flow.video_url); 
 
             changeScreen('mindful-detail');
         }
@@ -678,10 +766,10 @@
             instructorToggleBtn.textContent = IS_INSTRUCTOR_MODE 
                 ? 'Sair do Modo Instrutor (ON)' 
                 : 'Entrar em Modo Instrutor (OFF)';
-            instructorToggleBtn.classList.toggle('bg-gray-900');
-            instructorToggleBtn.classList.toggle('bg-red-800');
-            instructorToggleBtn.classList.toggle('text-yellow-500');
-            instructorToggleBtn.classList.toggle('text-white');
+            instructorToggleBtn.classList.toggle('bg-gray-900', !IS_INSTRUCTOR_MODE);
+            instructorToggleBtn.classList.toggle('bg-red-800', IS_INSTRUCTOR_MODE);
+            instructorToggleBtn.classList.toggle('text-yellow-500', !IS_INSTRUCTOR_MODE);
+            instructorToggleBtn.classList.toggle('text-white', IS_INSTRUCTOR_MODE);
             
             renderMissions(); 
             renderMindfulFlows();
@@ -705,6 +793,14 @@
             rankDisplay.textContent = currentProfileData.rank;
             xpDisplay.textContent = currentProfileData.xp;
             mindfulTimeDisplay.textContent = currentProfileData.mindful_time ? currentProfileData.mindful_time.substring(0, 5) : '--:--';
+            
+            // Show Admin link only for Master
+            IS_MASTER_USER = currentProfileData.role === 'master';
+            adminPanelLink.classList.toggle('hidden', !IS_MASTER_USER);
+            
+            // Show Instructor toggle only for authorized emails
+            const isAuthorizedInstructorEmail = INSTRUCTOR_EMAILS.includes(currentActiveUser.email.toLowerCase());
+            instructorToggleBtn.classList.toggle('hidden', !isAuthorizedInstructorEmail);
 
             // Update progress (MOCK)
             const totalProgress = currentProfileData.xp % 100; // Simple Example
@@ -746,6 +842,87 @@
             
             renderMindfulList(flowsToRender, mindfulList);
         }
+        
+        // =================================================================
+        // SECTION 6B: ADMIN LOGIC
+        // =================================================================
+
+        async function fetchAllProfiles() {
+            adminStatus.textContent = 'Buscando perfis...';
+            adminStatus.classList.remove('text-red-400');
+            
+            // NOTE: This requires RLS policies to allow 'master' role to SELECT *
+            const { data, error } = await supabaseClient
+                .from(PROFILES_TABLE)
+                .select('id, username, role, created_at');
+
+            if (error) {
+                console.error("Admin Fetch Error:", error);
+                // Common error: RLS is blocking the query.
+                adminStatus.textContent = `🚨 Erro de Permissão: ${error.message}. Verifique as políticas RLS do Supabase.`;
+                adminStatus.classList.add('text-red-400');
+                adminUserList.innerHTML = `<tr class="text-center text-red-400"><td colspan="3" class="py-4">Falha ao carregar lista de usuários.</td></tr>`;
+                return [];
+            }
+            adminStatus.textContent = '';
+            return data;
+        }
+
+        async function updateUserRole(userId, newRole) {
+            if (!IS_MASTER_USER) return;
+            
+            adminStatus.textContent = 'Atualizando permissão...';
+            adminStatus.classList.remove('text-red-400');
+            
+            const { error } = await supabaseClient
+                .from(PROFILES_TABLE)
+                .update({ role: newRole })
+                .eq('id', userId);
+
+            if (error) {
+                adminStatus.textContent = `🚨 Erro ao atualizar: ${error.message}`;
+                adminStatus.classList.add('text-red-400');
+            } else {
+                adminStatus.textContent = `✅ Permissão de ${newRole} salva!`;
+                setTimeout(() => renderAdminView(), 1000); // Re-render after successful update
+            }
+        }
+
+        async function renderAdminView() {
+            if (!IS_MASTER_USER) {
+                adminUserList.innerHTML = `<tr class="text-center text-red-400"><td colspan="3" class="py-4">Acesso Negado.</td></tr>`;
+                return;
+            }
+
+            const profiles = await fetchAllProfiles();
+            
+            if (profiles.length === 0) {
+                 adminUserList.innerHTML = `<tr class="text-center text-gray-500"><td colspan="3" class="py-4">Nenhum perfil encontrado.</td></tr>`;
+                 return;
+            }
+            
+            const listHtml = profiles.map(p => {
+                const isCurrentUser = p.id === currentActiveUser.id;
+                const roleColor = p.role === 'master' ? 'text-yellow-400' : 'text-gray-400';
+                
+                return `
+                    <tr class="hover:bg-gray-700 transition duration-100">
+                        <td class="px-3 py-2 text-sm font-medium text-white">${p.username || 'N/A'}</td>
+                        <td class="px-3 py-2 text-sm ${roleColor} font-bold">${p.role} ${isCurrentUser ? '(Você)' : ''}</td>
+                        <td class="px-3 py-2 text-sm">
+                            ${isCurrentUser ? '—' : `
+                                <select onchange="updateUserRole('${p.id}', this.value)" class="bg-gray-700 text-white rounded p-1 text-xs" ${isCurrentUser ? 'disabled' : ''}>
+                                    <option value="student" ${p.role === 'student' ? 'selected' : ''}>Aluno</option>
+                                    <option value="master" ${p.role === 'master' ? 'selected' : ''}>Master</option>
+                                </select>
+                            `}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            adminUserList.innerHTML = listHtml;
+        }
 
 
         // =================================================================
@@ -773,7 +950,7 @@
                 const { data: newProfile, error: insertError } = await supabaseClient
                     .from(PROFILES_TABLE)
                     .insert([
-                        { id: userId, username: user.email.split('@')[0] }
+                        { id: userId, username: user.email.split('@')[0], role: user.email === MASTER_EMAIL.toLowerCase() ? 'master' : 'student' } // Set initial role
                     ])
                     .select()
                     .single();
@@ -798,10 +975,13 @@
             const newAulaTime = aulaTimeInput.value;
             const newMindfulTime = mindfulTimeInput.value;
             
-            saveScheduleBtn.disabled = true;
-            scheduleStatus.textContent = 'Salvando horários...';
-            scheduleStatus.classList.remove('text-red-400', 'text-green-400');
-            scheduleStatus.classList.add('text-yellow-400');
+            const statusElement = document.getElementById('schedule-status');
+            const saveBtn = document.getElementById('save-schedule-btn');
+
+            saveBtn.disabled = true;
+            statusElement.textContent = 'Salvando horários...';
+            statusElement.classList.remove('text-red-400', 'text-green-400');
+            statusElement.classList.add('text-yellow-400');
 
             const { data, error } = await supabaseClient
                 .from(PROFILES_TABLE)
@@ -813,20 +993,20 @@
                 .select()
                 .single();
 
-            saveScheduleBtn.disabled = false;
+            saveBtn.disabled = false;
             
             if (error) {
                 console.error("Supabase Update Error:", error);
-                scheduleStatus.textContent = `🚨 Erro ao salvar: ${error.message}`;
-                scheduleStatus.classList.remove('text-yellow-400');
-                scheduleStatus.classList.add('text-red-400');
+                statusElement.textContent = `🚨 Erro ao salvar: ${error.message}`;
+                statusElement.classList.remove('text-yellow-400');
+                statusElement.classList.add('text-red-400');
             } else {
                 currentProfileData = data; // Update local state with new data
                 loadProfileData();          // Reload UI
-                scheduleStatus.textContent = '✅ Horários salvos com sucesso!';
-                scheduleStatus.classList.remove('text-yellow-400');
-                scheduleStatus.classList.add('text-green-400');
-                setTimeout(() => scheduleStatus.textContent = '', 3000);
+                statusElement.textContent = '✅ Horários salvos com sucesso!';
+                statusElement.classList.remove('text-yellow-400');
+                statusElement.classList.add('text-green-400');
+                setTimeout(() => statusElement.textContent = '', 3000);
             }
         }
 
@@ -836,25 +1016,9 @@
             bottomNav.classList.remove('hidden');
             currentActiveUser = user;
             
-            const userName = user.email.split('@')[0];
-            
-            // Check if user is instructor (only affects content visibility)
-            const isInstructor = INSTRUCTOR_EMAILS.includes(user.email.toLowerCase());
-
-            if (isInstructor) {
-                IS_INSTRUCTOR_MODE = true;
-                instructorToggleBtn.classList.add('bg-red-800', 'text-white');
-                instructorToggleBtn.classList.remove('bg-gray-900', 'text-yellow-500');
-                instructorToggleBtn.textContent = 'Sair do Modo Instrutor (ON)';
-            } else {
-                 IS_INSTRUCTOR_MODE = false;
-                 instructorToggleBtn.classList.remove('bg-red-800', 'text-white');
-                 instructorToggleBtn.classList.add('bg-gray-900', 'text-yellow-500');
-                 instructorToggleBtn.textContent = 'Entrar em Modo Instrutor (OFF)';
-            }
-            instructorToggleBtn.classList.toggle('hidden', !isInstructor);
-
             getOrCreateProfile(user); // START PROFILE LOADING/CREATION
+
+            // Supabase Auth Listener also calls this, ensuring screens are drawn
             renderMissions(); 
             renderMindfulFlows();
             changeScreen('dashboard');
@@ -864,97 +1028,178 @@
             appScreen.classList.add('hidden');
             bottomNav.classList.add('hidden');
             authScreen.classList.remove('hidden');
+            
+            // Clear forms and error messages
             document.getElementById('login-form').reset();
+            document.getElementById('register-form').reset();
+            document.getElementById('reset-form').reset();
+            clearMessages();
+            
+            // Default to login view
+            showAuthForm('login');
+            
             IS_INSTRUCTOR_MODE = false;
             currentActiveUser = null;
             currentProfileData = null;
         }
 
-        // --- Event Listeners ---
-        instructorToggleBtn.addEventListener('click', toggleInstructorView);
-        scheduleForm.addEventListener('submit', saveSchedule);
-        
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', () => changeScreen(btn.dataset.view));
-        });
-        
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-password').value;
-            authError.textContent = ''; 
+        function showAuthForm(formName) {
+            document.querySelectorAll('.auth-form').forEach(form => form.classList.add('hidden'));
+            document.getElementById(`${formName}-form`).classList.remove('hidden');
+            
+            const isLogin = formName === 'login';
+            showLoginBtnLink.classList.toggle('hidden', isLogin);
+            authSwitchText.classList.toggle('hidden', !isLogin);
+            
+            clearMessages();
+        }
 
-            const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        // =================================================================
+        // SECTION 8: EVENT LISTENERS & INITIALIZATION
+        // =================================================================
 
-            if (error) {
-                console.error("Supabase Login Error:", error); 
+        function setupAuthListeners() {
+            // AUTH NAVIGATION
+            showRegisterBtn.addEventListener('click', () => showAuthForm('register'));
+            showLoginBtnLink.addEventListener('click', () => showAuthForm('login'));
+            showResetBtn.addEventListener('click', () => showAuthForm('reset'));
+
+            // LOGIN
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('login-email').value;
+                const password = document.getElementById('login-password').value;
                 
-                if (error.message.includes('Invalid login credentials')) {
-                    authError.textContent = 'E-mail ou senha inválidos, OU seu e-mail ainda não foi confirmado. Tente confirmar seu e-mail no painel do Supabase.';
-                } else {
-                    authError.textContent = `Erro de autenticação: ${error.message}. Verifique o console.`;
+                showAuthMessage('Entrando...', false);
+
+                const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+                if (error) {
+                    console.error("Supabase Login Error:", error); 
+                    showAuthMessage(`Erro: ${error.message}. Verifique o console.`, true);
+                    return;
                 }
-                return;
-            }
-            if (data.user) {
-                showAppScreen(data.user);
-            }
-        });
+                // AuthStateChanged will handle showing the app screen
+            });
 
-        logoutBtn.addEventListener('click', async () => {
-            await supabaseClient.auth.signOut();
-            showAuthScreen();
-        });
+            // REGISTER
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('register-email').value;
+                const password = document.getElementById('register-password').value;
+                const username = document.getElementById('register-username').value;
+                
+                showAuthMessage('Registrando e enviando e-mail de confirmação...', false);
 
-        // --- Inicialização ---
-        showAuthScreen();
+                const { data, error } = await supabaseClient.auth.signUp({ 
+                    email, 
+                    password,
+                    options: { data: { username: username } } // Supabase stores username in auth.users.user_metadata
+                });
 
-        // NOVO: Lógica do Service Worker e PWA
-        const installAppBtn = document.getElementById('install-app-btn');
+                if (error) {
+                    showAuthMessage(`Erro de Registro: ${error.message}.`, true);
+                    return;
+                }
+
+                showAuthMessage('✅ Sucesso! Verifique seu e-mail para confirmar a conta.', false);
+                showAuthForm('login');
+            });
+
+            // PASSWORD RESET
+            resetForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('reset-email').value;
+                
+                showAuthMessage('Enviando link de redefinição...', false);
+
+                const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+                    redirectTo: window.location.origin // Redireciona de volta para a URL do seu PWA
+                });
+
+                if (error) {
+                    showAuthMessage(`Erro ao enviar link: ${error.message}.`, true);
+                    return;
+                }
+
+                showAuthMessage('✅ Link enviado! Verifique seu e-mail (e a pasta de SPAM).', false);
+                showAuthForm('login');
+            });
+            
+            // APP LISTENERS
+            instructorToggleBtn.addEventListener('click', toggleInstructorView);
+            scheduleForm.addEventListener('submit', saveSchedule);
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.addEventListener('click', () => changeScreen(btn.dataset.view));
+            });
+
+            logoutBtn.addEventListener('click', async () => {
+                await supabaseClient.auth.signOut();
+                // AuthStateChanged will handle showing the auth screen
+            });
+            
+            // PWA INSTALL BUTTON
+            installAppHeaderBtn.addEventListener('click', () => {
+                if (deferredInstallPrompt) {
+                    installAppHeaderBtn.classList.add('hidden');
+                    deferredInstallPrompt.prompt();
+                    deferredInstallPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome !== 'accepted') {
+                            // If user rejects, show the button again after a delay
+                             setTimeout(() => installAppHeaderBtn.classList.remove('hidden'), 5000);
+                        }
+                        deferredInstallPrompt = null;
+                    });
+                }
+            });
+        }
         
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // O escopo deve ser o raiz do site
+        function initializeApp() {
+            // 1. Setup Auth State Listener (Crucial for page transitions)
+            supabaseClient.auth.onAuthStateChange((event, session) => {
+                console.log('Supabase Auth Event:', event);
+                if (session) {
+                    showAppScreen(session.user);
+                } else {
+                    showAuthScreen();
+                }
+            });
+
+            // 2. Setup App Listeners
+            setupAuthListeners();
+
+            // 3. Setup PWA Service Worker
+            if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/service-worker.js')
                     .then(registration => {
                         console.log('Service Worker registrado com sucesso:', registration.scope);
                     })
                     .catch(error => {
-                        // Isso é comum em ambientes não-HTTPS ou não-root path.
-                        // No Netlify, ele deve funcionar se o SW estiver no root.
-                        console.error('Falha no registro do Service Worker:', error);
+                        // This error is expected in the Canvas environment, but should work on Netlify
+                        console.error('Falha no registro do Service Worker. Isso pode ser normal no ambiente de visualização, mas verifique o arquivo service-worker.js no seu site.', error);
                     });
+            }
+            
+            // 4. Setup PWA Install Prompt Listener
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault(); 
+                deferredInstallPrompt = e;
+                installAppHeaderBtn.classList.remove('hidden');
+                console.log('Evento beforeinstallprompt capturado. Botão de instalação visível.');
             });
+
+            // Initial check is handled by onAuthStateChange above.
+            
+            // Final check to hide installer button if PWA is already installed
+            if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
+                 installAppHeaderBtn.classList.add('hidden');
+            }
         }
         
-        window.addEventListener('beforeinstallprompt', (e) => {
-            // Previne que o mini-infobar padrão apareça
-            e.preventDefault(); 
-            // Guarda o evento para ser disparado mais tarde
-            deferredInstallPrompt = e;
-            // Mostra o botão personalizado de instalação
-            installAppBtn.classList.remove('hidden');
-            console.log('Evento beforeinstallprompt capturado. Botão de instalação visível.');
-        });
+        // Execute initialization after all HTML elements are loaded
+        document.addEventListener('DOMContentLoaded', initializeApp);
 
-        installAppBtn.addEventListener('click', () => {
-            if (deferredInstallPrompt) {
-                // Esconde o botão e dispara o prompt
-                installAppBtn.classList.add('hidden');
-                deferredInstallPrompt.prompt();
-                
-                // Trata a escolha do usuário
-                deferredInstallPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('Usuário aceitou a instalação do PWA');
-                    } else {
-                        console.log('Usuário recusou a instalação do PWA');
-                    }
-                    deferredInstallPrompt = null;
-                });
-            }
-        });
-        
     </script>
 </body>
 </html>
