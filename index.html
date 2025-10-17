@@ -221,6 +221,11 @@
                     <button id="admin-panel-link" class="w-full bg-gray-900 text-blue-400 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150 hidden" onclick="changeScreen('admin')">
                         🛠️ Admin Panel
                     </button>
+                    
+                    <!-- NOVO: PWA Install Button (Conditional Display) -->
+                    <button id="dashboard-install-btn" class="w-full bg-blue-600 text-white hover:bg-blue-700 text-sm py-2 rounded-lg transition duration-150 hidden mt-4">
+                        📲 Instalar Aplicativo para Acesso Rápido
+                    </button>
 
                     <!-- Missions Summary (Existing) -->
                     <section>
@@ -523,6 +528,7 @@
         const rankDisplay = document.getElementById('rank-display');
         const xpDisplay = document.getElementById('xp-display');
         const installAppHeaderBtn = document.getElementById('install-app-header-btn');
+        const dashboardInstallBtn = document.getElementById('dashboard-install-btn'); // NOVO
 
 
         // =================================================================
@@ -615,6 +621,8 @@
             }
             if (screenName === 'dashboard') {
                 renderMissions();
+                // Check and show PWA install button on dashboard
+                dashboardInstallBtn.classList.toggle('hidden', deferredInstallPrompt === null); 
             }
             if (screenName === 'admin' && IS_MASTER_USER) {
                  renderAdminView();
@@ -627,8 +635,9 @@
                 if (isMainView) {
                     const isActive = btn.dataset.view === screenName || 
                                      (screenName === 'mission-detail' && btn.dataset.view === 'missions') || 
-                                     (screenName === 'mindful-detail' && btn.dataset.view === 'mindful');
-
+                                     (screenName === 'mindful-detail' && btn.dataset.view === 'mindful') ||
+                                     (screenName === 'admin' && btn.dataset.view === 'dashboard'); // Admin view highlights dashboard
+                    
                     if (isActive) {
                         btn.classList.remove('text-gray-400', 'hover:text-white');
                         btn.classList.add('text-[#DC3545]');
@@ -1102,8 +1111,10 @@
                     return;
                 }
 
-                showAuthMessage('✅ Sucesso! Verifique seu e-mail para confirmar a conta.', false);
-                showAuthForm('login');
+                // If successful, display message and switch to login form
+                showAuthMessage('✅ Sucesso! Verifique seu e-mail para confirmar a conta. Você será redirecionado para o login.', false);
+                // Delay switch to let user read the success message
+                setTimeout(() => showAuthForm('login'), 2000); 
             });
 
             // PASSWORD RESET
@@ -1123,7 +1134,7 @@
                 }
 
                 showAuthMessage('✅ Link enviado! Verifique seu e-mail (e a pasta de SPAM).', false);
-                showAuthForm('login');
+                setTimeout(() => showAuthForm('login'), 2000);
             });
             
             // APP LISTENERS
@@ -1143,15 +1154,25 @@
             installAppHeaderBtn.addEventListener('click', () => {
                 if (deferredInstallPrompt) {
                     installAppHeaderBtn.classList.add('hidden');
+                    dashboardInstallBtn.classList.add('hidden'); // Hide both
                     deferredInstallPrompt.prompt();
                     deferredInstallPrompt.userChoice.then((choiceResult) => {
                         if (choiceResult.outcome !== 'accepted') {
                             // If user rejects, show the button again after a delay
-                             setTimeout(() => installAppHeaderBtn.classList.remove('hidden'), 5000);
+                             setTimeout(() => {
+                                installAppHeaderBtn.classList.remove('hidden');
+                                dashboardInstallBtn.classList.remove('hidden');
+                             }, 5000);
                         }
                         deferredInstallPrompt = null;
                     });
                 }
+            });
+            
+            // PWA Dashboard Button Click
+            dashboardInstallBtn.addEventListener('click', () => {
+                // Trigger the same logic as the header button
+                installAppHeaderBtn.click();
             });
         }
         
@@ -1186,6 +1207,7 @@
                 e.preventDefault(); 
                 deferredInstallPrompt = e;
                 installAppHeaderBtn.classList.remove('hidden');
+                dashboardInstallBtn.classList.remove('hidden'); // Show dashboard button on PWA readiness
                 console.log('Evento beforeinstallprompt capturado. Botão de instalação visível.');
             });
 
@@ -1194,6 +1216,7 @@
             // Final check to hide installer button if PWA is already installed
             if (window.matchMedia('(display-mode: standalone)').matches || navigator.standalone) {
                  installAppHeaderBtn.classList.add('hidden');
+                 dashboardInstallBtn.classList.add('hidden');
             }
         }
         
