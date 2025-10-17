@@ -169,6 +169,12 @@
                     <button id="instructor-toggle-btn" class="w-full bg-gray-900 text-yellow-500 hover:bg-gray-700 text-sm py-2 rounded-lg transition duration-150">
                         Entrar em Modo Instrutor (OFF)
                     </button>
+                    <!-- NOVO: PWA Install Prompt -->
+                    <div id="pwa-install-prompt" class="hidden">
+                         <button id="install-app-btn" class="w-full btn-primary bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md mt-4">
+                            📲 Instalar App (PWA)
+                        </button>
+                    </div>
 
                     <!-- Missions Summary (Existing) -->
                     <section>
@@ -362,6 +368,7 @@
         // Dados do Usuário Ativo
         let currentActiveUser = null;
         let currentProfileData = null;
+        let deferredInstallPrompt = null; // NOVO: PWA Install event
 
 
         // =================================================================
@@ -899,7 +906,10 @@
         // --- Inicialização ---
         showAuthScreen();
 
-        // NOVO: Registro do Service Worker para funcionalidade PWA
+        // NOVO: Lógica do Service Worker e PWA
+        const pwaInstallPromptDiv = document.getElementById('pwa-install-prompt');
+        const installAppBtn = document.getElementById('install-app-btn');
+        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 // O escopo deve ser o raiz do site
@@ -914,7 +924,31 @@
         }
         
         window.addEventListener('beforeinstallprompt', (e) => {
-            console.log('Installation prompt event fired.');
+            // Previne que o mini-infobar padrão apareça
+            e.preventDefault(); 
+            // Guarda o evento para ser disparado mais tarde
+            deferredInstallPrompt = e;
+            // Mostra o botão personalizado de instalação
+            pwaInstallPromptDiv.classList.remove('hidden');
+            console.log('Evento beforeinstallprompt capturado. Botão de instalação visível.');
+        });
+
+        installAppBtn.addEventListener('click', () => {
+            if (deferredInstallPrompt) {
+                // Esconde o botão e dispara o prompt
+                pwaInstallPromptDiv.classList.add('hidden');
+                deferredInstallPrompt.prompt();
+                
+                // Trata a escolha do usuário
+                deferredInstallPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('Usuário aceitou a instalação do PWA');
+                    } else {
+                        console.log('Usuário recusou a instalação do PWA');
+                    }
+                    deferredInstallPrompt = null;
+                });
+            }
         });
         
     </script>
